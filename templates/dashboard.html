@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — Hypertension Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <div class="bg-shape s1" aria-hidden="true"></div>
+  <div class="bg-shape s2" aria-hidden="true"></div>
+  <div class="bg-dots"     aria-hidden="true"></div>
+
+  <!-- ══════════ NAVBAR ══════════ -->
+  <header class="navbar">
+    <div class="brand-wrap">
+      <div class="brand-icon"><i class="fas fa-wave-square"></i></div>
+      <div>
+        <div class="brand-name">Hypertension Detection</div>
+        <div class="brand-sub">Advanced AI-Powered Cardiovascular Risk Assessment Platform</div>
+      </div>
+    </div>
+    <nav class="navbar-right">
+      <a href="{{ url_for('home') }}" class="nav-pill">
+        <i class="fas fa-stethoscope"></i> Assessment
+      </a>
+      <a href="{{ url_for('dashboard') }}" class="nav-pill nav-pill-teal">
+        <i class="fas fa-chart-line"></i> Dashboard
+      </a>
+      <button class="nav-pill theme-toggle-btn" id="themeToggle" onclick="toggleTheme()">
+        <i class="fas fa-moon" id="themeIcon"></i>
+        <span id="themeLabel">Dark</span>
+      </button>
+      <div class="nav-user-wrap">
+        <div class="nav-pill nav-user-pill">
+          <i class="fas fa-circle-user"></i>
+          <span>{{ current_user.username }}</span>
+        </div>
+        <a href="{{ url_for('logout') }}" class="nav-pill nav-logout-pill">
+          <i class="fas fa-right-from-bracket"></i> Logout
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="dash-wrap">
+
+    <!-- Title row -->
+    <div class="dash-title-row">
+      <div>
+        <h1 class="dash-page-title"><i class="fas fa-chart-pie"></i> My Health Dashboard</h1>
+        <p class="dash-page-sub">Personal prediction history and health analytics for <strong>{{ current_user.username }}</strong></p>
+      </div>
+      <a href="{{ url_for('home') }}" class="submit-btn"
+         style="width:auto;margin:0;padding:10px 22px;font-size:.8rem;text-decoration:none;">
+        <i class="fas fa-plus"></i> New Assessment
+      </a>
+    </div>
+
+    {% if total == 0 %}
+    <div class="dash-empty">
+      <div class="dash-empty-icon"><i class="fas fa-chart-bar"></i></div>
+      <h2>No assessments yet</h2>
+      <p>Complete your first risk assessment to see your health analytics here.</p>
+      <a href="{{ url_for('home') }}" class="submit-btn"
+         style="width:auto;margin-top:18px;padding:12px 28px;text-decoration:none;">
+        <i class="fas fa-stethoscope"></i> Start Assessment
+      </a>
+    </div>
+
+    {% else %}
+
+    <!-- ══ STAT CARDS ══ -->
+    <div class="stat-grid">
+
+      <div class="stat-card">
+        <div class="stat-icon-box teal-icon"><i class="fas fa-clipboard-list"></i></div>
+        <div class="stat-info">
+          <span class="stat-val">{{ total }}</span>
+          <span class="stat-label">Total Assessments</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-box
+          {% if last.priority == 'EMERGENCY' %}red-icon
+          {% elif last.priority == 'High Risk' %}orange-icon
+          {% elif last.priority == 'Moderate Risk' %}amber-icon
+          {% else %}green-icon{% endif %}">
+          <i class="fas fa-heart-pulse"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-val stat-val-result">{{ last.result }}</span>
+          <span class="stat-label">Last Assessment Result</span>
+          <span class="stat-date">
+            <i class="fas fa-calendar-days"></i>
+            {{ last.created_at.strftime('%d %b %Y, %H:%M') }}
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══ HEALTH TRACKER + INSIGHT ══ -->
+    <div class="tracker-insight-grid">
+
+      <!-- Trend Indicator -->
+      <div class="chart-card tracker-card">
+        <div class="chart-card-head">
+          <div class="chart-card-icon"><i class="fas fa-stethoscope"></i></div>
+          <div>
+            <h3>Health Tracker</h3>
+            <p>Risk trend based on your last assessments</p>
+          </div>
+        </div>
+        <div class="tracker-body">
+          {% if trend_label %}
+            <div class="trend-pill trend-{{ trend_type }}">
+              {% if trend_type == 'up' %}<i class="fas fa-arrow-trend-up"></i>
+              {% elif trend_type == 'down' %}<i class="fas fa-arrow-trend-down"></i>
+              {% else %}<i class="fas fa-minus"></i>{% endif %}
+              {{ trend_label }}
+            </div>
+            <p class="trend-note">
+              {% if trend_type == 'up' %}Your recent readings indicate a worsening trend. Please consult your doctor.
+              {% elif trend_type == 'down' %}Great progress! Your readings are showing improvement. Keep it up.
+              {% else %}Your readings have been consistent. Continue monitoring regularly.{% endif %}
+            </p>
+          {% else %}
+            <div class="trend-empty">
+              <i class="fas fa-circle-info"></i>
+              Complete at least 2 assessments to see your health trend.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Health Insight Box -->
+      <div class="chart-card insight-card">
+        <div class="chart-card-head">
+          <div class="chart-card-icon"><i class="fas fa-lightbulb"></i></div>
+          <div>
+            <h3>Health Insights</h3>
+            <p>Personalised observations from your history</p>
+          </div>
+        </div>
+        <div class="insight-body">
+          {% for insight in insights %}
+          <div class="insight-row">
+            <i class="fas fa-circle-dot"></i>
+            <span>{{ insight }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══ MONTHLY CHART ══ -->
+    <div class="chart-card chart-full">
+      <div class="chart-card-head">
+        <div class="chart-card-icon"><i class="fas fa-calendar-days"></i></div>
+        <div>
+          <h3>Monthly Assessments</h3>
+          <p>Number of assessments completed per month</p>
+        </div>
+      </div>
+      <div class="chart-body">
+        <canvas id="monthlyBarChart"></canvas>
+      </div>
+    </div>
+
+    <!-- ══ HISTORY TABLE ══ -->
+    <div class="chart-card chart-full">
+      <div class="chart-card-head">
+        <div class="chart-card-icon"><i class="fas fa-clock-rotate-left"></i></div>
+        <div>
+          <h3>Assessment History</h3>
+          <p>Complete log of all your past predictions</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="hist-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date &amp; Time</th>
+              <th>Result</th>
+              <th>Confidence</th>
+              <th>Risk Level</th>
+              <th>Report</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in records %}
+            <tr>
+              <td class="td-num">{{ loop.index }}</td>
+              <td class="td-date">
+                <i class="fas fa-calendar-days"></i>
+                {{ r.created_at.strftime('%d %b %Y') }}
+                <span class="td-time">{{ r.created_at.strftime('%H:%M') }}</span>
+              </td>
+              <td>
+                <span class="stage-badge
+                  {% if 'CRISIS' in r.result %}badge-crisis
+                  {% elif 'Stage-2' in r.result %}badge-s2
+                  {% elif 'Stage-1' in r.result %}badge-s1
+                  {% else %}badge-normal{% endif %}">
+                  {{ r.result }}
+                </span>
+              </td>
+              <td>
+                <div class="conf-bar-wrap">
+                  <div class="conf-bar-fill" style="width:{{ r.confidence | round }}%;">
+                    <span>{{ '%.1f' | format(r.confidence) }}%</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="risk-tag
+                  {% if r.priority == 'EMERGENCY' %}rtag-emergency
+                  {% elif r.priority == 'High Risk' %}rtag-high
+                  {% elif r.priority == 'Moderate Risk' %}rtag-moderate
+                  {% else %}rtag-low{% endif %}">
+                  {{ r.priority | upper }}
+                </span>
+              </td>
+              <td>
+                <a href="{{ url_for('download_report_by_id', record_id=r.id) }}"
+                   class="row-pdf-btn" title="Download PDF Report">
+                  <i class="fas fa-file-pdf"></i> PDF
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% endif %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-disclaimer">
+      <span class="footer-disc-icon"><i class="fas fa-triangle-exclamation"></i></span>
+      <span class="footer-disc-text">
+        <strong>Decision-Support Tool Only:</strong> This platform provides risk indicators to support clinical decision-making. It does <em>not</em> constitute a medical diagnosis.
+      </span>
+    </div>
+    <div class="footer-inner">
+      <span><i class="fas fa-lock"></i> Secure &amp; Private</span>
+      <span><i class="fas fa-shield-halved"></i> HIPAA-Aware</span>
+      <span class="footer-right">&copy; 2025 Hypertension Detection Platform</span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      const saved = localStorage.getItem('hd-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+      updateToggleUI(saved);
+    })();
+    function toggleTheme() {
+      const html  = document.documentElement;
+      const next  = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('hd-theme', next);
+      updateToggleUI(next);
+      updateChartTheme(next);
+    }
+    function updateToggleUI(theme) {
+      const icon  = document.getElementById('themeIcon');
+      const label = document.getElementById('themeLabel');
+      if (!icon || !label) return;
+      icon.className    = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+      label.textContent = theme === 'dark' ? 'Light' : 'Dark';
+    }
+
+    const monthLabels = {{ month_labels | tojson }};
+    const monthCounts = {{ month_counts | tojson }};
+
+    function isDark()  { return document.documentElement.getAttribute('data-theme') === 'dark'; }
+    function chartDefaults(dark) {
+      return {
+        gridColor: dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
+        textColor: dark ? '#94A3B8' : '#64748B'
+      };
+    }
+
+    const monthBar = new Chart(document.getElementById('monthlyBarChart'), {
+      type: 'bar',
+      data: {
+        labels: monthLabels,
+        datasets: [{
+          label: 'Assessments',
+          data: monthCounts,
+          backgroundColor: 'rgba(8,145,178,0.75)',
+          borderRadius: 8,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: chartDefaults(isDark()).textColor, font: { family: 'Outfit' } } } },
+        scales: {
+          x: { ticks: { color: chartDefaults(isDark()).textColor, font: { family: 'Outfit' } }, grid: { color: chartDefaults(isDark()).gridColor } },
+          y: { beginAtZero: true, ticks: { color: chartDefaults(isDark()).textColor, font: { family: 'Outfit' }, stepSize: 1 }, grid: { color: chartDefaults(isDark()).gridColor } }
+        }
+      }
+    });
+
+    function updateChartTheme(theme) {
+      const { gridColor, textColor } = chartDefaults(theme === 'dark');
+      Object.values(monthBar.options.scales).forEach(s => {
+        if (s.ticks) s.ticks.color = textColor;
+        if (s.grid)  s.grid.color  = gridColor;
+      });
+      monthBar.options.plugins.legend.labels.color = textColor;
+      monthBar.update();
+    }
+  </script>
+
+</body>
+</html>

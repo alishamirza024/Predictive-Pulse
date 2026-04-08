@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register — Hypertension Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+</head>
+<body>
+
+  <div class="bg-shape s1" aria-hidden="true"></div>
+  <div class="bg-shape s2" aria-hidden="true"></div>
+  <div class="bg-dots"     aria-hidden="true"></div>
+
+  <header class="navbar">
+    <div class="brand-wrap">
+      <div class="brand-icon"><i class="fas fa-wave-square"></i></div>
+      <div>
+        <div class="brand-name">Hypertension Detection</div>
+        <div class="brand-sub">Advanced AI-Powered Cardiovascular Risk Assessment</div>
+      </div>
+    </div>
+    <nav class="navbar-right">
+      <div class="nav-pill"><i class="fas fa-shield-halved"></i> Medical Grade</div>
+      <div class="nav-pill nav-pill-teal"><i class="fas fa-microchip"></i> AI-Powered</div>
+    </nav>
+  </header>
+
+  <main class="auth-wrap">
+    <div class="auth-card">
+
+      <div class="auth-header">
+        <div class="auth-icon-ring">
+          <i class="fas fa-user-plus"></i>
+        </div>
+        <h1 class="auth-title">Create Account</h1>
+        <p class="auth-sub">Join the platform and start your personalized risk assessment today</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+          <div class="flash-inline flash-{{ category }}">
+            <i class="fas {% if category == 'error' %}fa-circle-exclamation{% elif category == 'info' %}fa-circle-info{% else %}fa-circle-check{% endif %}"></i>
+            <span>{{ message }}</span>
+          </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form action="{{ url_for('register') }}" method="POST" class="auth-form">
+
+        <div class="fgroup">
+          <label><i class="fas fa-user"></i> Username</label>
+          <div class="input-wrap">
+            <i class="fas fa-user input-icon"></i>
+            <input type="text" name="username" placeholder="Choose a username" required minlength="3" autocomplete="username"/>
+          </div>
+        </div>
+
+        <div class="fgroup">
+          <label><i class="fas fa-envelope"></i> Email Address</label>
+          <div class="input-wrap">
+            <i class="fas fa-envelope input-icon"></i>
+            <input type="email" name="email" placeholder="you@example.com" required autocomplete="email"/>
+          </div>
+        </div>
+
+        <div class="fgroup">
+          <label><i class="fas fa-lock"></i> Password</label>
+          <div class="input-wrap">
+            <i class="fas fa-lock input-icon"></i>
+            <input type="password" name="password" id="regPassword" placeholder="Minimum 6 characters" required minlength="6" autocomplete="new-password"/>
+            <button type="button" class="eye-btn" onclick="togglePwd('regPassword', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="fgroup">
+          <label><i class="fas fa-lock"></i> Confirm Password</label>
+          <div class="input-wrap">
+            <i class="fas fa-lock input-icon"></i>
+            <input type="password" name="confirm_password" id="regConfirm" placeholder="Re-enter your password" required autocomplete="new-password"/>
+            <button type="button" class="eye-btn" onclick="togglePwd('regConfirm', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <span class="field-hint" id="matchHint"></span>
+        </div>
+
+        <button type="submit" class="submit-btn">
+          <i class="fas fa-user-plus"></i>
+          CREATE ACCOUNT
+        </button>
+
+      </form>
+
+      <p class="auth-switch">
+        Already have an account?
+        <a href="{{ url_for('login') }}">Sign in</a>
+      </p>
+
+    </div>
+
+    <div class="auth-side">
+      <div class="auth-side-inner">
+        <div class="auth-side-icon"><i class="fas fa-shield-heart"></i></div>
+        <h2>Your Data is Safe</h2>
+        <ul class="auth-feature-list">
+          <li><i class="fas fa-check-circle"></i> Passwords stored with bcrypt hashing</li>
+          <li><i class="fas fa-check-circle"></i> No health data shared with third parties</li>
+          <li><i class="fas fa-check-circle"></i> Prediction history visible only to you</li>
+          <li><i class="fas fa-check-circle"></i> Sessions expire automatically for safety</li>
+        </ul>
+        <div class="auth-side-note">
+          <i class="fas fa-triangle-exclamation"></i>
+          This platform is for research & educational purposes only.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function togglePwd(id, btn) {
+      const inp = document.getElementById(id);
+      const icon = btn.querySelector('i');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      icon.className = inp.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+    }
+
+    // Live password match indicator
+    const pw  = document.getElementById('regPassword');
+    const cpw = document.getElementById('regConfirm');
+    const hint = document.getElementById('matchHint');
+    function checkMatch() {
+      if (!cpw.value) { hint.textContent = ''; return; }
+      if (pw.value === cpw.value) {
+        hint.textContent = '✓ Passwords match';
+        hint.style.color = '#10B981';
+      } else {
+        hint.textContent = '✗ Passwords do not match';
+        hint.style.color = '#EF4444';
+      }
+    }
+    pw.addEventListener('input', checkMatch);
+    cpw.addEventListener('input', checkMatch);
+  </script>
+</body>
+</html>

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hypertension Detection — Risk Assessment Platform</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+</head>
+<body>
+
+  <div class="bg-shape s1" aria-hidden="true"></div>
+  <div class="bg-shape s2" aria-hidden="true"></div>
+  <div class="bg-dots"     aria-hidden="true"></div>
+
+  <!-- ══════════════════════════════
+       NAVBAR
+  ══════════════════════════════ -->
+  <header class="navbar">
+    <div class="brand-wrap">
+      <div class="brand-icon">
+        <i class="fas fa-wave-square"></i>
+      </div>
+      <div>
+        <div class="brand-name">Hypertension Detection</div>
+        <div class="brand-sub">Advanced AI-Powered Cardiovascular Risk Assessment Platform</div>
+      </div>
+    </div>
+    <nav class="navbar-right">
+      <div class="nav-pill"><i class="fas fa-shield-halved"></i> Medical Grade</div>
+      <a href="{{ url_for('dashboard') }}" class="nav-pill">
+        <i class="fas fa-chart-line"></i> Dashboard
+      </a>
+
+      <!-- Theme Toggle -->
+      <button class="nav-pill theme-toggle-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle dark mode">
+        <i class="fas fa-moon" id="themeIcon"></i>
+        <span id="themeLabel">Dark</span>
+      </button>
+
+      <!-- User + Logout -->
+      <div class="nav-user-wrap">
+        <div class="nav-pill nav-user-pill">
+          <i class="fas fa-circle-user"></i>
+          <span>{{ current_user.username }}</span>
+        </div>
+        <a href="{{ url_for('logout') }}" class="nav-pill nav-logout-pill" title="Sign out">
+          <i class="fas fa-right-from-bracket"></i>
+          Logout
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ══════════════════════════════
+       MAIN
+  ══════════════════════════════ -->
+  <main class="main-wrap">
+    <div class="page-grid">
+
+      <!-- ████ LEFT: ASSESSMENT CARD ████ -->
+      <section class="assess-card">
+
+        <div class="assess-header">
+          <div class="assess-header-content">
+            <div class="assess-icon-box">
+              <i class="fas fa-stethoscope"></i>
+            </div>
+            <div>
+              <h1 class="assess-title">Comprehensive Health Assessment</h1>
+              <p class="assess-sub">Complete our evidence-based questionnaire for personalized hypertension risk evaluation and clinical recommendations</p>
+            </div>
+          </div>
+          <div class="assess-header-blob" aria-hidden="true"></div>
+        </div>
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+            <div class="flash-inline flash-{{ category }}">
+              <i class="fas {% if category == 'error' %}fa-circle-exclamation{% elif category == 'info' %}fa-circle-info{% else %}fa-circle-check{% endif %}"></i>
+              <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- ══ RESULT BLOCK ══ -->
+        {% if prediction_text %}
+          {% set chex = result_color.split(' ')[1] %}
+          <div class="result-block" style="--rc: {{ chex }};">
+            <div class="result-accent-bar" style="background: {{ chex }};"></div>
+            <div class="result-content">
+
+              <div class="result-top-row">
+                <div class="result-orb" style="background: {{ chex }}18; border: 2px solid {{ chex }}50;">
+                  {% if recommendation.priority == 'EMERGENCY' %}
+                    <i class="fas fa-triangle-exclamation" style="color:{{ chex }};"></i>
+                  {% elif recommendation.priority == 'High Risk' %}
+                    <i class="fas fa-circle-exclamation" style="color:{{ chex }};"></i>
+                  {% elif recommendation.priority == 'Moderate Risk' %}
+                    <i class="fas fa-heart-circle-exclamation" style="color:{{ chex }};"></i>
+                  {% else %}
+                    <i class="fas fa-circle-check" style="color:{{ chex }};"></i>
+                  {% endif %}
+                </div>
+                <div class="result-info">
+                  <h2 class="result-stage" style="color:{{ chex }};">{{ recommendation.title }}</h2>
+                  <div class="result-meta">
+                    <span class="conf-label">
+                      <i class="fas fa-chart-line"></i> Confidence: <strong>{{ "%.1f"|format(confidence) }}%</strong>
+                    </span>
+                    <span class="risk-tag
+                      {% if recommendation.priority == 'EMERGENCY' %}rtag-emergency
+                      {% elif recommendation.priority == 'High Risk' %}rtag-high
+                      {% elif recommendation.priority == 'Moderate Risk' %}rtag-moderate
+                      {% else %}rtag-low{% endif %}">
+                      {{ recommendation.priority | upper }}
+                    </span>
+                  </div>
+                  <p class="result-desc">{{ recommendation.description }}</p>
+                </div>
+              </div>
+
+              <!-- Recommendations -->
+              <div class="result-sep"></div>
+              <div class="rec-area">
+                <div class="rec-label">
+                  <i class="fas fa-clipboard-list"></i> Clinical Recommendations
+                </div>
+                <div class="rec-list">
+                  {% for action in recommendation.actions %}
+                  <div class="rec-row" style="border-left: 3px solid {{ chex }};">
+                    <i class="fas fa-chevron-right" style="color:{{ chex }};"></i>
+                    <span>{{ action }}</span>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <!-- Ethics note -->
+              <div class="result-ethics-note">
+                <i class="fas fa-circle-info"></i>
+                <span>This result is a <strong>decision-support indicator only</strong> — not a clinical diagnosis. Please consult a licensed physician for proper evaluation and treatment.</span>
+              </div>
+
+              <!-- ── PDF Download ── -->
+              <form action="{{ url_for('download_report') }}" method="POST" class="pdf-form">
+                <input type="hidden" name="prediction"  value="{{ prediction_text }}">
+                <input type="hidden" name="confidence"  value="{{ '%.1f'|format(confidence) }}">
+                <input type="hidden" name="rec_title"   value="{{ recommendation.title }}">
+                <input type="hidden" name="rec_desc"    value="{{ recommendation.description }}">
+                <input type="hidden" name="priority"    value="{{ recommendation.priority }}">
+                {% for action in recommendation.actions %}
+                  <input type="hidden" name="rec_actions" value="{{ action }}">
+                {% endfor %}
+                <button type="submit" class="pdf-btn">
+                  <i class="fas fa-file-pdf"></i>
+                  Download PDF Report
+                </button>
+              </form>
+
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- ══ FORM ══ -->
+        <form action="/predict" method="POST" class="assess-form">
+
+          <!-- Demographics -->
+          <div class="fsec-label"><span class="fsec-pip"></span>Demographics</div>
+          <div class="frow">
+            <div class="fgroup">
+              <label><i class="fas fa-venus-mars"></i> Gender</label>
+              <select name="Gender" required>
+                <option value="" disabled {% if not form_data %}selected{% endif %}>Select Gender</option>
+                <option value="Male"   {% if form_data and form_data.Gender == 'Male'   %}selected{% endif %}>Male</option>
+                <option value="Female" {% if form_data and form_data.Gender == 'Female' %}selected{% endif %}>Female</option>
+              </select>
+            </div>
+            <div class="fgroup">
+              <label><i class="fas fa-calendar-days"></i> Age Group</label>
+              <select name="Age" required>
+                <option value="" disabled {% if not form_data %}selected{% endif %}>Select Age Range</option>
+                <option value="18-34" {% if form_data and form_data.Age == '18-34' %}selected{% endif %}>18–34 years</option>
+                <option value="35-50" {% if form_data and form_data.Age == '35-50' %}selected{% endif %}>35–50 years</option>
+                <option value="51-64" {% if form_data and form_data.Age == '51-64' %}selected{% endif %}>51–64 years</option>
+                <option value="65+"   {% if form_data and form_data.Age == '65+'   %}selected{% endif %}>65+ years</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Medical History -->
+          <div class="fsec-label"><span class="fsec-pip"></span>Medical History</div>
+          <div class="frow">
+            <div class="fgroup">
+              <label><i class="fas fa-clock-rotate-left"></i> Family History of Hypertension</label>
+              <select name="History" required>
+                <option value="" disabled {% if not form_data %}selected{% endif %}>Select Option</option>
+                <option value="Yes" {% if form_data and form_data.History == 'Yes' %}selected{% endif %}>Yes</option>
+                <option value="No"  {% if form_data and form_data.History == 'No'  %}selected{% endif %}>No</option>
+              </select>
+            </div>
+            <div class="fgroup">
+              <label><i class="fas fa-user-nurse"></i> Currently Under Medical Care</label>
+              <select name="Patient" required>
+                <option value="" disabled {% if not form_data %}selected{% endif %}>Select Option</option>
+                <option value="Yes" {% if form_data and form_data.Patient == 'Yes' %}selected{% endif %}>Yes</option>
+                <option value="No"  {% if form_data and form_data.Patient == 'No'  %}selected{% endif %}>No</option>
+              </select>
+            </div>
+          </div>
+          <div class="frow">
+            <div class="fgroup">
+              <label><i class="fas fa-capsules"></i> Currently Taking BP Medication</label>
+              <select name="TakeMedication" required>
+                <option value="" disabled {% if not form_data %}selected{% endif %}>Select Option</option>
+                <option value="Yes" {% if form_data and form_data.TakeMedication == 'Yes' %}selected{% endif %}>Yes</option>
+                <option value="No"  {% if form_data and form_data.TakeMedication == 'No'  %}selected{% endif %}>No</option>
+              </select>
+            </div>
+            <div class="fgroup">
+              <label><i class="fas fa-signal"></i> Symptom Severity</label>
+              <select name="Severity" required>
+                <option value="" disabled {% if not form_data %}selected{% endif %}>Select Severity</option>
+                <option value="Mild"     {% if form_data and form_data.Severity == 'Mild'     %}selected{% endif %}>Mild</option>
+                <option value="Moderate" {% if form_data and form_data.Severity == 'Moderate' %}selected{% endif %}>Moderate</option>
+                <option value="Severe"   {% if form_data and form_data.Severity == 'Severe'   %}selected{% endif %}>Severe</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Symptom Assessment -->
+          <div class="fsec-label"><span class="fsec-pip"></span>Symptom Assessment</div>
+          <div class="frow">
+            <div class="fgroup">
+              <label><i class="fas fa-lungs"></i> Shortness of Breath</label>
+              <select name="BreathShortness" required>
+                <option value="" disabled {% if not form_data %}selected{% endif %}>Select Option</option>
+                <option value="Yes" {% if form_data and form_data.BreathShortness == 'Yes' %}selected{% endif %}>Yes</option>
+                <option value="No"  {% if form_data and form_data.BreathShortness == 'No'  %}selected{% endif %}>No</option>
+              </select>
+            </div>
+            <div class="fgroup">
+              <label><i class="fas fa-eye"></i> Vision Changes</label>
+              <select name="VisualChanges" required>
+                <option value="" disabled {% if not form_data %}selected{% endif %}>Select Option</option>
+                <option value="Yes" {% if form_data and form_data.VisualChanges == 'Yes' %}selected{% endif %}>Yes</option>
+                <option value="No"  {% if form_data and form_data.VisualChanges == 'No'  %}selected{% endif %}>No</option>
+              </select>
+            </div>
+          </div>
+          <div class="frow">
+            <div class="fgroup">
+              <label><i class="fas fa-droplet"></i> Frequent Nosebleeds</label>
+              <select name="NoseBleeding" required>
+                <option value="" disabled {% if not form_data %}selected{% endif %}>Select Option</option>
+                <option value="Yes" {% if form_data and form_data.NoseBleeding == 'Yes' %}selected{% endif %}>Yes</option>
+                <option value="No"  {% if form_data and form_data.NoseBleeding == 'No'  %}selected{% endif %}>No</option>
+              </select>
+            </div>
+            <div class="fgroup">
+              <label><i class="fas fa-calendar-check"></i> Time Since Diagnosis</label>
+              <select name="Whendiagnoused" required>
+                <option value="" disabled {% if not form_data %}selected{% endif %}>Select Time Period</option>
+                <option value="<1 Year"     {% if form_data and form_data.Whendiagnoused == '<1 Year'     %}selected{% endif %}>Less than 1 Year</option>
+                <option value="1 - 5 Years" {% if form_data and form_data.Whendiagnoused == '1 - 5 Years' %}selected{% endif %}>1 – 5 Years</option>
+                <option value=">5 Years"    {% if form_data and form_data.Whendiagnoused == '>5 Years'    %}selected{% endif %}>More than 5 Years</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Blood Pressure -->
+          <div class="fsec-label"><span class="fsec-pip"></span>Blood Pressure Readings</div>
+          <div class="frow">
+            <div class="fgroup">
+              <label><i class="fas fa-heart-pulse"></i> Systolic Pressure</label>
+              <select name="Systolic" required>
+                <option value="" disabled {% if not form_data %}selected{% endif %}>Select Range</option>
+                <option value="100 - 110" {% if form_data and form_data.Systolic == '100 - 110' %}selected{% endif %}>100–110 mmHg</option>
+                <option value="111 - 120" {% if form_data and form_data.Systolic == '111 - 120' %}selected{% endif %}>111–120 mmHg</option>
+                <option value="121 - 130" {% if form_data and form_data.Systolic == '121 - 130' %}selected{% endif %}>121–130 mmHg</option>
+                <option value="130+"      {% if form_data and form_data.Systolic == '130+'      %}selected{% endif %}>130+ mmHg</option>
+              </select>
+            </div>
+            <div class="fgroup">
+              <label><i class="fas fa-heart-pulse"></i> Diastolic Pressure</label>
+              <select name="Diastolic" required>
+                <option value="" disabled {% if not form_data %}selected{% endif %}>Select Range</option>
+                <option value="70 - 80"  {% if form_data and form_data.Diastolic == '70 - 80'  %}selected{% endif %}>70–80 mmHg</option>
+                <option value="81 - 90"  {% if form_data and form_data.Diastolic == '81 - 90'  %}selected{% endif %}>81–90 mmHg</option>
+                <option value="91 - 100" {% if form_data and form_data.Diastolic == '91 - 100' %}selected{% endif %}>91–100 mmHg</option>
+                <option value="100+"     {% if form_data and form_data.Diastolic == '100+'      %}selected{% endif %}>100+ mmHg</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Lifestyle -->
+          <div class="fsec-label"><span class="fsec-pip"></span>Lifestyle Factors</div>
+          <div class="frow half">
+            <div class="fgroup">
+              <label><i class="fas fa-utensils"></i> Heart-Healthy Diet</label>
+              <select name="ControlledDiet" required>
+                <option value="" disabled {% if not form_data %}selected{% endif %}>Select Option</option>
+                <option value="Yes" {% if form_data and form_data.ControlledDiet == 'Yes' %}selected{% endif %}>Yes</option>
+                <option value="No"  {% if form_data and form_data.ControlledDiet == 'No'  %}selected{% endif %}>No</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-ethics-note">
+            <i class="fas fa-circle-info"></i>
+            <span>By submitting, you acknowledge this tool provides <strong>decision-support indicators only</strong> and is not a substitute for professional medical advice, diagnosis, or treatment.</span>
+          </div>
+
+          <button type="submit" class="submit-btn">
+            <i class="fas fa-microchip"></i>
+            GENERATE RISK ASSESSMENT
+          </button>
+
+        </form>
+      </section>
+
+      <!-- ████ RIGHT SIDEBAR ████ -->
+      <aside class="sidebar">
+
+        <div class="side-card" style="animation-delay:.07s">
+          <div class="side-head">
+            <div class="side-head-icon"><i class="fas fa-circle-info"></i></div>
+            <h3>About This System</h3>
+          </div>
+          <p class="side-desc">Our AI-powered platform analyzes multiple cardiovascular risk factors using advanced machine learning algorithms trained on clinical data.</p>
+          <ul class="side-list">
+            <li><i class="fas fa-check"></i> Evidence-based risk assessment</li>
+            <li><i class="fas fa-check"></i> Clinical guideline compliance</li>
+            <li><i class="fas fa-check"></i> Personalized recommendations</li>
+            <li><i class="fas fa-check"></i> Professional medical support</li>
+          </ul>
+        </div>
+
+        <div class="side-card" style="animation-delay:.13s">
+          <div class="side-head">
+            <div class="side-head-icon side-icon-rose"><i class="fas fa-heart"></i></div>
+            <h3>Blood Pressure Guidelines</h3>
+          </div>
+          <div class="bp-rows">
+            <div class="bp-row"><span class="bp-tag btag-normal">Normal</span><span class="bp-val">&lt;120/80 mmHg</span></div>
+            <div class="bp-row"><span class="bp-tag btag-elevated">Elevated</span><span class="bp-val">120–129/&lt;80 mmHg</span></div>
+            <div class="bp-row"><span class="bp-tag btag-s1">Stage 1</span><span class="bp-val">130–139/80–89 mmHg</span></div>
+            <div class="bp-row"><span class="bp-tag btag-s2">Stage 2</span><span class="bp-val">≥140/≥90 mmHg</span></div>
+            <div class="bp-row"><span class="bp-tag btag-crisis">Crisis</span><span class="bp-val">&gt;180/&gt;120 mmHg</span></div>
+          </div>
+        </div>
+
+        <div class="side-card ethics-card" style="animation-delay:.19s">
+          <div class="side-head">
+            <div class="side-head-icon side-icon-amber"><i class="fas fa-scale-balanced"></i></div>
+            <h3>Ethical Use Notice</h3>
+          </div>
+          <div class="ethics-body">
+            <div class="ethics-point">
+              <i class="fas fa-hand-holding-medical"></i>
+              <div>
+                <strong>Decision-Support Only</strong>
+                <p>This tool assists clinicians and patients in identifying potential risk — it does not replace a physician's diagnosis.</p>
+              </div>
+            </div>
+            <div class="ethics-point">
+              <i class="fas fa-user-doctor"></i>
+              <div>
+                <strong>Consult a Professional</strong>
+                <p>Always seek advice from a qualified healthcare provider before acting on any output from this platform.</p>
+              </div>
+            </div>
+            <div class="ethics-point">
+              <i class="fas fa-database"></i>
+              <div>
+                <strong>Data Limitations</strong>
+                <p>AI predictions are probabilistic and trained on historical data — results may not apply to every individual.</p>
+              </div>
+            </div>
+            <div class="ethics-point">
+              <i class="fas fa-lock"></i>
+              <div>
+                <strong>Privacy First</strong>
+                <p>No personal health data entered here is stored or shared with third parties.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+  </main>
+
+  <!-- ══ FOOTER ══ -->
+  <footer class="site-footer">
+    <div class="footer-disclaimer">
+      <span class="footer-disc-icon"><i class="fas fa-triangle-exclamation"></i></span>
+      <span class="footer-disc-text">
+        <strong>Decision-Support Tool Only:</strong> This platform provides risk indicators to support clinical decision-making. It does <em>not</em> constitute a medical diagnosis. Always consult a qualified healthcare professional before making any medical decisions.
+      </span>
+    </div>
+    <div class="footer-inner">
+      <span><i class="fas fa-lock"></i> Secure &amp; Private</span>
+      <span><i class="fas fa-shield-halved"></i> HIPAA-Aware</span>
+      <span><i class="fas fa-flask"></i> Evidence-Based</span>
+      <span class="footer-right">&copy; 2025 Hypertension Detection Platform</span>
+    </div>
+  </footer>
+
+  <!-- ══ THEME TOGGLE JS ══ -->
+  <script>
+    // Apply saved theme on load
+    (function () {
+      const saved = localStorage.getItem('hd-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+      updateToggleUI(saved);
+    })();
+
+    function toggleTheme() {
+      const html    = document.documentElement;
+      const current = html.getAttribute('data-theme') || 'light';
+      const next    = current === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('hd-theme', next);
+      updateToggleUI(next);
+    }
+
+    function updateToggleUI(theme) {
+      const icon  = document.getElementById('themeIcon');
+      const label = document.getElementById('themeLabel');
+      if (!icon || !label) return;
+      if (theme === 'dark') {
+        icon.className  = 'fas fa-sun';
+        label.textContent = 'Light';
+      } else {
+        icon.className  = 'fas fa-moon';
+        label.textContent = 'Dark';
+      }
+    }
+  </script>
+
+</body>
+</html>
