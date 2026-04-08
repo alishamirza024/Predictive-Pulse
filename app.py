@@ -149,9 +149,37 @@ except FileNotFoundError:
 #  Auth Routes
 # ─────────────────────────────────────────────
 @app.route('/login', methods=['GET', 'POST'])
+# def login():
+#     if current_user.is_authenticated:
+#         return redirect(url_for('home'))
+#     if request.method == 'POST':
+#         email    = request.form.get('email', '').strip()
+#         password = request.form.get('password', '')
+#         remember = bool(request.form.get('remember'))
+
+#         if not email or not password:
+#             flash('Please fill in all fields.', 'error')
+#             return render_template('login.html')
+
+#         user = User.query.filter_by(email=email).first()
+#         if user and user.check_password(password):
+#             login_user(user, remember=remember)
+#             next_page = request.args.get('next')
+#             flash(f'Welcome back, {user.username}!', 'success')
+#             return redirect(next_page or url_for('home'))
+#         else:
+#             flash('Invalid email or password.', 'error')
+
+#     return render_template('login.html')
+
+@app.route('/login', methods=['GET', 'POST'])
 def login():
+    email = ""
+
+    # If user is already logged in → pre-fill email
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
+        email = current_user.email
+
     if request.method == 'POST':
         email    = request.form.get('email', '').strip()
         password = request.form.get('password', '')
@@ -159,7 +187,7 @@ def login():
 
         if not email or not password:
             flash('Please fill in all fields.', 'error')
-            return render_template('login.html')
+            return render_template('login.html', email=email)
 
         user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
@@ -170,8 +198,7 @@ def login():
         else:
             flash('Invalid email or password.', 'error')
 
-    return render_template('login.html')
-
+    return render_template('login.html', email=email)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
