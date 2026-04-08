@@ -15,13 +15,12 @@ from reportlab.lib.utils import simpleSplit
 #  App & DB setup
 # ─────────────────────────────────────────────
 app = Flask(__name__)
-app.secret_key = 'change-this-in-production-xyz987'
-
+app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = (
-      f"mysql+pymysql://{os.environ['MYSQLUSER']}:{os.environ['MYSQLPASSWORD']}"
-      f"@{os.environ['MYSQLHOST']}:{os.environ['MYSQLPORT']}/{os.environ['MYSQL_DATABASE']}"
-  )
+    f"mysql+pymysql://{os.getenv('MYSQLUSER', 'root')}:{os.getenv('MYSQLPASSWORD', 'Root%40123')}"
+    f"@{os.getenv('MYSQLHOST', 'localhost')}:{os.getenv('MYSQLPORT', '3306')}/{os.getenv('MYSQL_DATABASE', 'hypertension_db')}"
+)
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -141,7 +140,7 @@ recommendations = {
 #  Load Model
 # ─────────────────────────────────────────────
 try:
-    model = joblib.load("logreg.pkl")
+    model = joblib.load("logreg_model.pkl")
 except FileNotFoundError:
     print("Warning: Model file not found. Using dummy predictions.")
     model = None
