@@ -547,6 +547,19 @@ def doctor_patient_view(patient_id):
     )
 
 # ─────────────────────────────────────────────
+#  Health Check (no auth - used by Render & uptime monitors)
+# ─────────────────────────────────────────────
+@app.route('/health')
+def health():
+    from flask import jsonify
+    try:
+        db.session.execute(db.text('SELECT 1'))
+        return jsonify(status='ok', db='connected'), 200
+    except Exception as e:
+        return jsonify(status='error', db=str(e)), 500
+
+
+# ─────────────────────────────────────────────
 #  Main Routes
 # ─────────────────────────────────────────────
 @app.route('/')
@@ -1100,8 +1113,28 @@ def _build_pdf(prediction, confidence, priority,
 # ─────────────────────────────────────────────
 #  Init DB & Run
 # ─────────────────────────────────────────────
+def init_db():
+    """Create all tables. Called at startup and lazily on first request."""
+    try:
+        db.create_all()
+        print("✅ Database tables created / verified.")
+    except Exception as e:
+        print(f"⚠️  db.create_all() failed: {e}")
+
+# Try to init DB at module load (works when DATABASE_URL is already available)
 with app.app_context():
-    db.create_all()
+    init_db()
+
+# Fallback: re-try on the very first HTTP request in case DB wasn't ready yet
+_db_initialised = False
+
+@app.before_request
+def ensure_db():
+    global _db_initialised
+    if not _db_initialised:
+        with app.app_context():
+            init_db()
+        _db_initialised = True
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
