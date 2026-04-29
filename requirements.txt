@@ -9,8 +9,7 @@ itsdangerous==2.2.0
 click==8.1.8
 
 # Database drivers
-PyMySQL==1.1.1          # local MySQL / fallback
-psycopg2-binary==2.9.10 # Render PostgreSQL
+psycopg2-binary==2.9.10 # PostgreSQL driver
 
 # WSGI server
 gunicorn==23.0.0
