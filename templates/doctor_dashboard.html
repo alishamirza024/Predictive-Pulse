@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Doctor Dashboard — Hypertension Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+</head>
+<body>
+
+  <div class="bg-shape s1" aria-hidden="true"></div>
+  <div class="bg-shape s2" aria-hidden="true"></div>
+  <div class="bg-dots"     aria-hidden="true"></div>
+
+  <header class="navbar">
+    <div class="brand-wrap">
+      <div class="brand-icon"><i class="fas fa-wave-square"></i></div>
+      <div>
+        <div class="brand-name">Hypertension Detection</div>
+        <div class="brand-sub">Healthcare Provider Portal</div>
+      </div>
+    </div>
+    <nav class="navbar-right">
+      <a href="{{ url_for('doctor_dashboard') }}" class="nav-pill nav-pill-teal">
+        <i class="fas fa-user-doctor"></i> My Patients
+      </a>
+      <button class="nav-pill theme-toggle-btn" id="themeToggle" onclick="toggleTheme()">
+        <i class="fas fa-moon" id="themeIcon"></i>
+        <span id="themeLabel">Dark</span>
+      </button>
+      <div class="nav-user-wrap">
+        <div class="nav-pill nav-user-pill">
+          <i class="fas fa-user-md"></i>
+          <span>Dr. {{ current_user.username }}</span>
+        </div>
+        <a href="{{ url_for('logout') }}" class="nav-pill nav-logout-pill">
+          <i class="fas fa-right-from-bracket"></i> Logout
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="dash-wrap">
+
+    <div class="dash-title-row">
+      <div>
+        <h1 class="dash-page-title"><i class="fas fa-users-medical"></i> Patient Management</h1>
+        <p class="dash-page-sub">Monitor and review risk assessments for your linked patients</p>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="margin-bottom: 2rem;">
+        {% for category, message in messages %}
+        <div class="flash-inline flash-{{ category }}" style="margin-bottom:0.5rem;">
+          <i class="fas {% if category == 'error' %}fa-circle-exclamation{% elif category == 'info' %}fa-circle-info{% else %}fa-circle-check{% endif %}"></i>
+          <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+
+
+    <!-- ══ INCOMING CONSULTATION REQUESTS ══ -->
+    <div class="chart-card chart-full" style="margin-top:2rem;">
+      <div class="chart-card-head">
+        <div class="chart-card-icon" style="background: rgba(245, 158, 11, 0.15); color: #D97706;"><i class="fas fa-inbox"></i></div>
+        <div>
+          <h3>Incoming Consultation Requests</h3>
+          <p>Review and respond to patient consultation requests</p>
+        </div>
+        <button onclick="loadDoctorRequests()" class="nav-pill" style="margin-left: auto; border: 1px solid var(--border-color); background: var(--card-bg);">
+          <i class="fas fa-rotate"></i> Refresh
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table class="hist-table">
+          <thead>
+            <tr>
+              <th>Patient Name</th>
+              <th>Message</th>
+              <th>Notes</th>
+              <th>Date</th>
+              <th>Status / Action</th>
+            </tr>
+          </thead>
+          <tbody id="doctorRequestsBody">
+            <tr><td colspan="5" style="text-align:center;">Loading requests...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="chart-card chart-full" style="margin-top:2rem;">
+      <div class="chart-card-head">
+        <div class="chart-card-icon"><i class="fas fa-clipboard-user"></i></div>
+        <div>
+          <h3>My Patients</h3>
+          <p>Select a patient to view their detailed prediction history and insights</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="hist-table">
+          <thead>
+            <tr>
+              <th>Patient Name</th>
+              <th>Email</th>
+              <th>Joined Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for patient in patients %}
+            <tr>
+              <td><strong>{{ patient.username }}</strong></td>
+              <td>{{ patient.email }}</td>
+              <td class="td-date">
+                <i class="fas fa-calendar-days"></i>
+                {{ patient.created_at.strftime('%d %b %Y') }}
+              </td>
+              <td>
+                <a href="{{ url_for('doctor_patient_view', patient_id=patient.id) }}" class="submit-btn" style="width:auto; margin:0; padding:8px 16px; font-size:0.85rem; text-decoration:none; display:inline-block;">
+                  <i class="fas fa-eye"></i> View Records
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" style="text-align:center; padding:2rem; color:var(--text-sub);">
+                <i class="fas fa-user-slash" style="font-size:2rem; margin-bottom:1rem; opacity:0.5;"></i>
+                <p>No patients linked yet. Send a request to get started.</p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    (function () {
+      const saved = localStorage.getItem('hd-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+      updateToggleUI(saved);
+    })();
+    function toggleTheme() {
+      const html  = document.documentElement;
+      const next  = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('hd-theme', next);
+      updateToggleUI(next);
+    }
+    function updateToggleUI(theme) {
+      const icon  = document.getElementById('themeIcon');
+      const label = document.getElementById('themeLabel');
+      if (!icon || !label) return;
+      icon.className    = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+      label.textContent = theme === 'dark' ? 'Light' : 'Dark';
+    }
+
+    // --- Doctor Consultation Requests API Logic ---
+    const doctorId = {{ current_user.id }};
+
+    async function loadDoctorRequests() {
+      const tbody = document.getElementById('doctorRequestsBody');
+      if (!tbody) return;
+      
+      try {
+        const res = await fetch(`/doctor-requests/${doctorId}`);
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+          tbody.innerHTML = '';
+          if (data.requests.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-sub);">No consultation requests found.</td></tr>';
+            return;
+          }
+          
+          data.requests.forEach(r => {
+            const statusClass = 'status-' + r.status.toLowerCase();
+            let actionHtml = '';
+            
+            if (r.status === 'Pending') {
+              actionHtml = `
+                <div style="display:flex; gap:0.5rem; justify-content:center;">
+                  <button onclick="updateRequestStatus(${r.id}, 'Accepted')" class="submit-btn" style="width:auto; margin:0; padding:6px 12px; font-size:0.8rem; background:#10B981; border:none; color:#fff;">Accept</button>
+                  <button onclick="updateRequestStatus(${r.id}, 'Rejected')" class="submit-btn" style="width:auto; margin:0; padding:6px 12px; font-size:0.8rem; background:#EF4444; border:none; color:#fff;">Reject</button>
+                </div>
+              `;
+            } else if (r.status === 'Accepted') {
+              actionHtml = `
+                <div style="display:flex; gap:0.5rem; justify-content:center; align-items:center;">
+                  <span class="status-badge ${statusClass}" style="margin-right: 10px;">${r.status}</span>
+                  <button onclick="updateRequestStatus(${r.id}, 'Completed')" class="submit-btn" style="width:auto; margin:0; padding:6px 12px; font-size:0.8rem; background:#3B82F6; border:none; color:#fff;">Mark Completed</button>
+                </div>
+              `;
+            } else {
+              actionHtml = `<span class="status-badge ${statusClass}">${r.status}</span>`;
+            }
+
+            tbody.innerHTML += `
+              <tr>
+                <td><strong>${r.patient_name}</strong></td>
+                <td style="max-width: 250px;">${r.message}</td>
+                <td style="max-width: 200px; color:var(--text-sub); font-size:0.85rem;">${r.notes || '-'}</td>
+                <td class="td-date"><i class="fas fa-calendar-days"></i> ${r.date}</td>
+                <td style="text-align:center;">${actionHtml}</td>
+              </tr>
+            `;
+          });
+        }
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#EF4444;">Error loading requests.</td></tr>';
+      }
+    }
+
+    async function updateRequestStatus(requestId, status) {
+      try {
+        const res = await fetch('/update-request-status', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ request_id: requestId, status: status })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+          loadDoctorRequests(); // refresh table
+        } else {
+          alert('Error: ' + data.message);
+        }
+      } catch (err) {
+        alert('Failed to update status.');
+      }
+    }
+
+    // Load requests on page load
+    document.addEventListener('DOMContentLoaded', loadDoctorRequests);
+  </script>
+</body>
+</html>

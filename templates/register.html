@@ -32,9 +32,7 @@
     <div class="auth-card">
 
       <div class="auth-header">
-        <div class="auth-icon-ring">
-          <i class="fas fa-user-plus"></i>
-        </div>
+        <div class="auth-icon-ring"><i class="fas fa-user-plus"></i></div>
         <h1 class="auth-title">Create Account</h1>
         <p class="auth-sub">Join the platform and start your personalized risk assessment today</p>
       </div>
@@ -68,11 +66,50 @@
           </div>
         </div>
 
+        <!-- Account Type -->
+        <div class="fgroup" style="margin-bottom: 1.5rem;">
+          <label><i class="fas fa-user-tag"></i> Account Type</label>
+          <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500; font-size: 0.9rem;">
+              <input type="radio" name="role" value="patient" id="rolePatient" checked style="width: auto;">
+              Patient
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500; font-size: 0.9rem;">
+              <input type="radio" name="role" value="doctor" id="roleDoctor" style="width: auto;">
+              Healthcare Provider
+            </label>
+          </div>
+        </div>
+
+        <!-- Doctor-only fields — shown only when Healthcare Provider is selected -->
+        <div id="doctorFields" style="display:none;">
+          <div class="fgroup" style="margin-bottom: 1rem;">
+            <label><i class="fas fa-stethoscope"></i> Specialization</label>
+            <div class="input-wrap">
+              <i class="fas fa-stethoscope input-icon"></i>
+              <input type="text" name="specialization" id="specializationInput"
+                     placeholder="e.g. Cardiologist, General Physician"
+                     disabled autocomplete="off"/>
+            </div>
+          </div>
+          <div class="fgroup" style="margin-bottom: 1rem;">
+            <label><i class="fas fa-briefcase-medical"></i> Years of Experience</label>
+            <div class="input-wrap">
+              <i class="fas fa-briefcase-medical input-icon"></i>
+              <input type="number" name="experience_years" id="experienceInput"
+                     placeholder="10" min="0" max="60"
+                     disabled autocomplete="off"/>
+            </div>
+          </div>
+        </div>
+
         <div class="fgroup">
           <label><i class="fas fa-lock"></i> Password</label>
           <div class="input-wrap">
             <i class="fas fa-lock input-icon"></i>
-            <input type="password" name="password" id="regPassword" placeholder="Minimum 6 characters" required minlength="6" autocomplete="new-password"/>
+            <input type="password" name="password" id="regPassword"
+                   placeholder="Minimum 6 characters" required minlength="6"
+                   autocomplete="new-password"/>
             <button type="button" class="eye-btn" onclick="togglePwd('regPassword', this)">
               <i class="fas fa-eye"></i>
             </button>
@@ -83,7 +120,9 @@
           <label><i class="fas fa-lock"></i> Confirm Password</label>
           <div class="input-wrap">
             <i class="fas fa-lock input-icon"></i>
-            <input type="password" name="confirm_password" id="regConfirm" placeholder="Re-enter your password" required autocomplete="new-password"/>
+            <input type="password" name="confirm_password" id="regConfirm"
+                   placeholder="Re-enter your password" required
+                   autocomplete="new-password"/>
             <button type="button" class="eye-btn" onclick="togglePwd('regConfirm', this)">
               <i class="fas fa-eye"></i>
             </button>
@@ -117,23 +156,44 @@
         </ul>
         <div class="auth-side-note">
           <i class="fas fa-triangle-exclamation"></i>
-          This platform is for research & educational purposes only.
+          This platform is for research &amp; educational purposes only.
         </div>
       </div>
     </div>
   </main>
 
   <script>
+    // ── Show / hide doctor fields based on role ──────────────────
+    const doctorFields = document.getElementById('doctorFields');
+    const specInput    = document.getElementById('specializationInput');
+    const expInput     = document.getElementById('experienceInput');
+    const rolePatient  = document.getElementById('rolePatient');
+    const roleDoctor   = document.getElementById('roleDoctor');
+
+    function updateDoctorFields() {
+      const isDoctor = roleDoctor.checked;
+      doctorFields.style.display = isDoctor ? 'block' : 'none';
+      // Disable fields when hidden so they are NOT submitted with the form
+      specInput.disabled = !isDoctor;
+      expInput.disabled  = !isDoctor;
+      specInput.required = isDoctor;
+      expInput.required  = isDoctor;
+    }
+    rolePatient.addEventListener('change', updateDoctorFields);
+    roleDoctor.addEventListener('change', updateDoctorFields);
+    updateDoctorFields(); // run on page load
+
+    // ── Password visibility toggle ───────────────────────────────
     function togglePwd(id, btn) {
-      const inp = document.getElementById(id);
+      const inp  = document.getElementById(id);
       const icon = btn.querySelector('i');
       inp.type = inp.type === 'password' ? 'text' : 'password';
       icon.className = inp.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
     }
 
-    // Live password match indicator
-    const pw  = document.getElementById('regPassword');
-    const cpw = document.getElementById('regConfirm');
+    // ── Live password match indicator ────────────────────────────
+    const pw   = document.getElementById('regPassword');
+    const cpw  = document.getElementById('regConfirm');
     const hint = document.getElementById('matchHint');
     function checkMatch() {
       if (!cpw.value) { hint.textContent = ''; return; }

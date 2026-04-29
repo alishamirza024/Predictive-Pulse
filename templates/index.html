@@ -156,6 +156,9 @@
                 {% for action in recommendation.actions %}
                   <input type="hidden" name="rec_actions" value="{{ action }}">
                 {% endfor %}
+                {% if form_data %}
+                  <input type="hidden" name="input_data" value="{{ form_data | tojson }}">
+                {% endif %}
                 <button type="submit" class="pdf-btn">
                   <i class="fas fa-file-pdf"></i>
                   Download PDF Report

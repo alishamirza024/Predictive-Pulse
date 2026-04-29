@@ -25,20 +25,34 @@
       </div>
     </div>
     <nav class="navbar-right">
+      {% if doctor_view %}
+      <a href="{{ url_for('doctor_dashboard') }}" class="nav-pill" style="background:var(--card-bg, #fff); border:1px solid var(--border-color, #E2E8F0); color:var(--text-main, #0F172A);">
+        <i class="fas fa-arrow-left"></i> Back to Patients
+      </a>
+      <a href="{{ url_for('doctor_dashboard') }}" class="nav-pill nav-pill-teal">
+        <i class="fas fa-user-doctor"></i> My Patients
+      </a>
+      {% else %}
       <a href="{{ url_for('home') }}" class="nav-pill">
         <i class="fas fa-stethoscope"></i> Assessment
       </a>
       <a href="{{ url_for('dashboard') }}" class="nav-pill nav-pill-teal">
         <i class="fas fa-chart-line"></i> Dashboard
       </a>
+      {% endif %}
       <button class="nav-pill theme-toggle-btn" id="themeToggle" onclick="toggleTheme()">
         <i class="fas fa-moon" id="themeIcon"></i>
         <span id="themeLabel">Dark</span>
       </button>
       <div class="nav-user-wrap">
         <div class="nav-pill nav-user-pill">
+          {% if doctor_view %}
+          <i class="fas fa-user-md"></i>
+          <span>Dr. {{ current_user.username }}</span>
+          {% else %}
           <i class="fas fa-circle-user"></i>
           <span>{{ current_user.username }}</span>
+          {% endif %}
         </div>
         <a href="{{ url_for('logout') }}" class="nav-pill nav-logout-pill">
           <i class="fas fa-right-from-bracket"></i> Logout
@@ -52,28 +66,102 @@
     <!-- Title row -->
     <div class="dash-title-row">
       <div>
-        <h1 class="dash-page-title"><i class="fas fa-chart-pie"></i> My Health Dashboard</h1>
-        <p class="dash-page-sub">Personal prediction history and health analytics for <strong>{{ current_user.username }}</strong></p>
+        <h1 class="dash-page-title">
+          <i class="fas fa-chart-pie"></i> 
+          {% if doctor_view %}Viewing Patient: {{ patient.username }}{% else %}My Health Dashboard{% endif %}
+        </h1>
+        <p class="dash-page-sub">Personal prediction history and health analytics for <strong>{% if doctor_view %}{{ patient.username }}{% else %}{{ current_user.username }}{% endif %}</strong></p>
       </div>
-      <a href="{{ url_for('home') }}" class="submit-btn"
-         style="width:auto;margin:0;padding:10px 22px;font-size:.8rem;text-decoration:none;">
-        <i class="fas fa-plus"></i> New Assessment
-      </a>
+      {% if not doctor_view %}
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button onclick="openDoctorModal()"
+           style="width:auto;margin:0;padding:10px 22px;font-size:.8rem;background:linear-gradient(90deg,var(--teal) 0%,var(--teal-mid) 100%);color:#fff;border:none;border-radius:11px;cursor:pointer;display:flex;align-items:center;gap:9px;font-family:var(--ff-display);font-weight:700;letter-spacing:1.3px;box-shadow:0 4px 20px rgba(8,145,178,.3);transition:transform .2s,box-shadow .2s;">
+          <i class="fas fa-user-md"></i> Consult with a Doctor
+        </button>
+        <a href="{{ url_for('home') }}" class="submit-btn"
+           style="width:auto;margin:0;padding:10px 22px;font-size:.8rem;text-decoration:none;">
+          <i class="fas fa-plus"></i> New Assessment
+        </a>
+      </div>
+      {% endif %}
     </div>
+
+    {% if doctor_view %}
+    <!-- Doctor Summary Card -->
+    {% if last and (last.priority == 'High Risk' or last.priority == 'EMERGENCY' or trend_type == 'up') %}
+    <div style="background:#FEF2F2; border-left:4px solid #EF4444; padding:1rem 1.5rem; border-radius:0.5rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:1rem;">
+      <i class="fas fa-triangle-exclamation" style="color:#EF4444; font-size:1.5rem;"></i>
+      <div>
+        <h4 style="margin:0; color:#991B1B;">⚠️ High Risk Patient – Needs Attention</h4>
+        <p style="margin:0.25rem 0 0; color:#B91C1C; font-size:0.9rem;">This patient exhibits elevated risk indicators or a worsening trend.</p>
+      </div>
+    </div>
+    {% endif %}
+    <div style="background:var(--card-bg, #fff); border:1px solid var(--border-color, #E2E8F0); border-radius:1rem; padding:1.5rem; margin-bottom:2rem; display:flex; gap:2rem; flex-wrap:wrap; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+      <div style="flex:1; min-width:200px;">
+        <p style="margin:0 0 0.25rem; font-size:0.85rem; color:var(--text-sub, #64748B);">Patient Name</p>
+        <p style="margin:0; font-weight:600; font-size:1.1rem; color:var(--text-main, #0F172A);">{{ patient.username }}</p>
+      </div>
+      <div style="flex:1; min-width:150px;">
+        <p style="margin:0 0 0.25rem; font-size:0.85rem; color:var(--text-sub, #64748B);">Latest Risk Level</p>
+        <p style="margin:0; font-weight:600; font-size:1.1rem; color:var(--text-main, #0F172A);">
+          <span class="risk-tag {% if last %}{% if last.priority == 'EMERGENCY' %}rtag-emergency{% elif last.priority == 'High Risk' %}rtag-high{% elif last.priority == 'Moderate Risk' %}rtag-moderate{% else %}rtag-low{% endif %}{% else %}rtag-low{% endif %}" style="margin:0; display:inline-block; padding:4px 8px;">
+            {% if last %}{{ last.priority | upper }}{% else %}N/A{% endif %}
+          </span>
+        </p>
+      </div>
+      <div style="flex:1; min-width:150px;">
+        <p style="margin:0 0 0.25rem; font-size:0.85rem; color:var(--text-sub, #64748B);">Last Assessment</p>
+        <p style="margin:0; font-weight:600; font-size:1.1rem; color:var(--text-main, #0F172A);">{% if last %}{{ last.created_at.strftime('%d %b %Y') }}{% else %}N/A{% endif %}</p>
+      </div>
+      <div style="flex:1; min-width:150px;">
+        <p style="margin:0 0 0.25rem; font-size:0.85rem; color:var(--text-sub, #64748B);">Total Assessments</p>
+        <p style="margin:0; font-weight:600; font-size:1.1rem; color:var(--text-main, #0F172A);">{{ total }}</p>
+      </div>
+      <div style="flex:1; min-width:150px;">
+        <p style="margin:0 0 0.25rem; font-size:0.85rem; color:var(--text-sub, #64748B);">Risk Trend</p>
+        <p style="margin:0; font-weight:600; font-size:1.1rem; color:{% if trend_type == 'up' %}#EF4444{% elif trend_type == 'down' %}#10B981{% else %}#3B82F6{% endif %};">
+          {% if trend_label %}{{ trend_label }}{% else %}Insufficient Data{% endif %}
+        </p>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if pending_requests %}
+    <div class="pending-requests" style="background:var(--card-bg, #fff); box-shadow:0 4px 15px rgba(0,0,0,0.05); padding:1.5rem; border-radius:1rem; margin-bottom:2rem; border-left:4px solid #F59E0B;">
+      <h3 style="margin-top:0; margin-bottom:1rem; color:var(--text-main, #0F172A);"><i class="fas fa-user-doctor" style="color:#F59E0B; margin-right:8px;"></i> Doctor Link Requests</h3>
+      {% for req in pending_requests %}
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; background:rgba(245, 158, 11, 0.05); padding:1rem; border-radius:0.5rem;">
+          <span style="color:var(--text-sub, #475569);"><strong>Dr. {{ req.doctor.username }}</strong> would like to access your health records.</span>
+          <div style="display:flex; gap:0.5rem;">
+            <form action="{{ url_for('patient_handle_request', request_id=req.id, action='approve') }}" method="POST">
+              <button type="submit" class="submit-btn" style="padding:8px 16px; font-size:0.85rem; margin:0; width:auto; background:#10B981; border:none; border-radius:6px; color:#fff; cursor:pointer;"><i class="fas fa-check"></i> Approve</button>
+            </form>
+            <form action="{{ url_for('patient_handle_request', request_id=req.id, action='reject') }}" method="POST">
+              <button type="submit" class="submit-btn" style="padding:8px 16px; font-size:0.85rem; margin:0; width:auto; background:#EF4444; border:none; border-radius:6px; color:#fff; cursor:pointer;"><i class="fas fa-times"></i> Reject</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
 
     {% if total == 0 %}
     <div class="dash-empty">
       <div class="dash-empty-icon"><i class="fas fa-chart-bar"></i></div>
       <h2>No assessments yet</h2>
       <p>Complete your first risk assessment to see your health analytics here.</p>
+      {% if not doctor_view %}
       <a href="{{ url_for('home') }}" class="submit-btn"
          style="width:auto;margin-top:18px;padding:12px 28px;text-decoration:none;">
         <i class="fas fa-stethoscope"></i> Start Assessment
       </a>
+      {% endif %}
     </div>
 
     {% else %}
 
+    {% if not doctor_view %}
     <!-- ══ STAT CARDS ══ -->
     <div class="stat-grid">
 
@@ -159,14 +247,46 @@
       </div>
 
     </div>
+    
+    <!-- ══ MY CONSULTATION REQUESTS ══ -->
+    <div class="chart-card chart-full">
+      <div class="chart-card-head">
+        <div class="chart-card-icon"><i class="fas fa-notes-medical"></i></div>
+        <div>
+          <h3>My Consultation Requests</h3>
+          <p>Track your pending and past doctor consultations</p>
+        </div>
+        <button onclick="loadPatientRequests()" class="nav-pill" style="margin-left: auto; border: 1px solid var(--border-color); background: var(--card-bg);">
+          <i class="fas fa-rotate"></i> Refresh
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table class="hist-table" id="consultationsTable">
+          <thead>
+            <tr>
+              <th>Doctor</th>
+              <th>Specialization</th>
+              <th>Message Preview</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="consultationsBody">
+            <tr><td colspan="5" style="text-align:center;">Loading requests...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    {% endif %}
 
     <!-- ══ MONTHLY CHART ══ -->
     <div class="chart-card chart-full">
       <div class="chart-card-head">
         <div class="chart-card-icon"><i class="fas fa-calendar-days"></i></div>
         <div>
-          <h3>Monthly Assessments</h3>
-          <p>Number of assessments completed per month</p>
+          <h3>Risk Trend Over Time</h3>
+          <p>Assessment risk timeline {% if total < 5 %}(Based on limited data: {{ total }} assessments){% endif %}</p>
         </div>
       </div>
       <div class="chart-body">
@@ -259,6 +379,55 @@
     </div>
   </footer>
 
+  <!-- ══════════ CONSULTATION MODAL ══════════ -->
+  <div id="doctorModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><i class="fas fa-user-md"></i> Consult with a Doctor</h2>
+        <button class="modal-close" onclick="closeDoctorModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" id="doctorModalBody">
+        <!-- List View -->
+        <div id="doctorListView">
+          <div class="filter-row">
+            <div class="input-wrap">
+              <i class="fas fa-search input-icon"></i>
+              <input type="text" id="doctorSearch" placeholder="Search by name or specialization..." onkeyup="filterDoctors()" style="padding-left: 40px; width: 100%; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 10px 10px 40px;">
+            </div>
+          </div>
+          <div id="doctorListContainer" class="doctor-grid">
+            <p style="text-align:center; width:100%;">Loading doctors...</p>
+          </div>
+        </div>
+        
+        <!-- Form View -->
+        <div id="doctorFormView" style="display: none;">
+          <button class="nav-pill" onclick="showDoctorList()" style="margin-bottom: 15px; border: 1px solid var(--border-color); background: var(--card-bg);">
+            <i class="fas fa-arrow-left"></i> Back to Doctors
+          </button>
+          <div class="selected-doctor-card">
+            <h3 id="formDoctorName">Dr. Name</h3>
+            <p id="formDoctorSpec">Specialization</p>
+          </div>
+          <form id="consultationForm" onsubmit="submitConsultation(event)">
+            <input type="hidden" id="formDoctorId">
+            <div style="margin-bottom: 15px;">
+              <label style="display:block; margin-bottom:5px; font-weight:500;">Reason for Consultation <span style="color:#EF4444;">*</span></label>
+              <textarea id="formReason" required rows="3" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-family:inherit; resize:vertical;"></textarea>
+            </div>
+            <div style="margin-bottom: 20px;">
+              <label style="display:block; margin-bottom:5px; font-weight:500;">Additional Notes (Optional)</label>
+              <textarea id="formNotes" rows="2" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-family:inherit; resize:vertical;"></textarea>
+            </div>
+            <button type="submit" class="submit-btn" style="width:100%; margin:0;">
+              <i class="fas fa-paper-plane"></i> Send Request
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     (function () {
       const saved = localStorage.getItem('hd-theme') || 'light';
@@ -281,8 +450,9 @@
       label.textContent = theme === 'dark' ? 'Light' : 'Dark';
     }
 
-    const monthLabels = {{ month_labels | tojson }};
-    const monthCounts = {{ month_counts | tojson }};
+    const chartLabels = {{ chart_labels | tojson }};
+    const chartData = {{ chart_data | tojson }};
+    const chartColors = {{ chart_colors | tojson }};
 
     function isDark()  { return document.documentElement.getAttribute('data-theme') === 'dark'; }
     function chartDefaults(dark) {
@@ -293,24 +463,43 @@
     }
 
     const monthBar = new Chart(document.getElementById('monthlyBarChart'), {
-      type: 'bar',
+      type: 'line',
       data: {
-        labels: monthLabels,
+        labels: chartLabels,
         datasets: [{
-          label: 'Assessments',
-          data: monthCounts,
-          backgroundColor: 'rgba(8,145,178,0.75)',
-          borderRadius: 8,
-          borderSkipped: false
+          label: 'Risk Level',
+          data: chartData,
+          borderColor: 'rgba(8,145,178,0.5)',
+          backgroundColor: 'rgba(8,145,178,0.1)',
+          tension: 0,
+          fill: false,
+          pointBackgroundColor: chartColors,
+          pointBorderColor: chartColors,
+          pointRadius: 5,
+          pointHoverRadius: 7
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: chartDefaults(isDark()).textColor, font: { family: 'Outfit' } } } },
+        plugins: { 
+          legend: { labels: { color: chartDefaults(isDark()).textColor, font: { family: 'Outfit' } } },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const val = context.raw;
+                let riskLabel = 'Low Risk';
+                if (val >= 4) riskLabel = 'Emergency';
+                else if (val >= 3) riskLabel = 'High Risk';
+                else if (val >= 2) riskLabel = 'Moderate Risk';
+                return `Risk Level: ${riskLabel} (${val})`;
+              }
+            }
+          }
+        },
         scales: {
           x: { ticks: { color: chartDefaults(isDark()).textColor, font: { family: 'Outfit' } }, grid: { color: chartDefaults(isDark()).gridColor } },
-          y: { beginAtZero: true, ticks: { color: chartDefaults(isDark()).textColor, font: { family: 'Outfit' }, stepSize: 1 }, grid: { color: chartDefaults(isDark()).gridColor } }
+          y: { suggestedMin: 0, suggestedMax: 4, ticks: { color: chartDefaults(isDark()).textColor, font: { family: 'Outfit' }, stepSize: 1 }, grid: { color: chartDefaults(isDark()).gridColor } }
         }
       }
     });
@@ -324,6 +513,175 @@
       monthBar.options.plugins.legend.labels.color = textColor;
       monthBar.update();
     }
+
+    // --- Consultation Modal & API Logic ---
+    {% if not doctor_view %}
+    const patientId = {{ current_user.id }};
+    let allDoctors = [];
+    
+    // Check if patient needs emergency specialist
+    const isEmergency = {% if last and last.priority == 'EMERGENCY' %}true{% else %}false{% endif %};
+
+    function openDoctorModal() {
+      document.getElementById('doctorModal').style.display = 'flex';
+      showDoctorList();
+      if (allDoctors.length === 0) {
+        fetchDoctors();
+      }
+    }
+
+    function closeDoctorModal() {
+      document.getElementById('doctorModal').style.display = 'none';
+    }
+
+    function showDoctorList() {
+      document.getElementById('doctorFormView').style.display = 'none';
+      document.getElementById('doctorListView').style.display = 'block';
+    }
+
+    async function fetchDoctors() {
+      try {
+        const response = await fetch('/api/doctors');
+        const data = await response.json();
+        if (data.status === 'success') {
+          allDoctors = data.doctors;
+          renderDoctors(allDoctors);
+        }
+      } catch (err) {
+        document.getElementById('doctorListContainer').innerHTML = '<p style="color:#EF4444; text-align:center;">Failed to load doctors.</p>';
+      }
+    }
+
+    function renderDoctors(doctors) {
+      const container = document.getElementById('doctorListContainer');
+      container.innerHTML = '';
+      
+      if (doctors.length === 0) {
+        container.innerHTML = '<p style="text-align:center; width:100%; color:var(--text-sub);">No doctors found.</p>';
+        return;
+      }
+
+      doctors.forEach(doc => {
+        let highlightStyle = '';
+        let suggestionHtml = '';
+        if (isEmergency && doc.specialization.toLowerCase().includes('cardiologist')) {
+            highlightStyle = 'border: 2px solid #EF4444; background: rgba(239, 68, 68, 0.05);';
+            suggestionHtml = '<div style="color:#EF4444; font-size:0.75rem; font-weight:700; margin-bottom:5px;"><i class="fas fa-star"></i> Recommended Specialist</div>';
+        }
+        
+        let availColor = doc.availability === 'Available' ? '#10B981' : (doc.availability === 'Busy' ? '#F59E0B' : '#64748B');
+
+        const card = document.createElement('div');
+        card.className = 'doctor-card';
+        card.style.cssText = highlightStyle;
+        card.innerHTML = `
+          ${suggestionHtml}
+          <div class="doc-header">
+            <h4>Dr. ${doc.name}</h4>
+            <span class="status-dot" style="background:${availColor};" title="${doc.availability}"></span>
+          </div>
+          <p class="doc-spec"><i class="fas fa-stethoscope"></i> ${doc.specialization}</p>
+          <p class="doc-exp"><i class="fas fa-briefcase-medical"></i> ${doc.experience} Years Exp.</p>
+          <button class="submit-btn doc-req-btn" onclick="openRequestForm(${doc.id}, '${doc.name.replace(/'/g, "\\'")}', '${doc.specialization.replace(/'/g, "\\'")}')" ${doc.availability === 'Offline' ? 'disabled' : ''}>
+            Request Consultation
+          </button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function filterDoctors() {
+      const q = document.getElementById('doctorSearch').value.toLowerCase();
+      const filtered = allDoctors.filter(d => 
+        d.name.toLowerCase().includes(q) || 
+        d.specialization.toLowerCase().includes(q)
+      );
+      renderDoctors(filtered);
+    }
+
+    function openRequestForm(id, name, spec) {
+      document.getElementById('formDoctorId').value = id;
+      document.getElementById('formDoctorName').innerText = 'Dr. ' + name;
+      document.getElementById('formDoctorSpec').innerText = spec;
+      document.getElementById('formReason').value = '';
+      document.getElementById('formNotes').value = '';
+      
+      document.getElementById('doctorListView').style.display = 'none';
+      document.getElementById('doctorFormView').style.display = 'block';
+    }
+
+    async function submitConsultation(e) {
+      e.preventDefault();
+      const btn = e.target.querySelector('button[type="submit"]');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+      btn.disabled = true;
+
+      const payload = {
+        doctor_id: document.getElementById('formDoctorId').value,
+        message: document.getElementById('formReason').value,
+        notes: document.getElementById('formNotes').value
+      };
+
+      try {
+        const res = await fetch('/request-consultation', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+          alert('Consultation request sent successfully!');
+          closeDoctorModal();
+          loadPatientRequests(); // Refresh table
+        } else {
+          alert('Error: ' + data.message);
+        }
+      } catch (err) {
+        alert('An error occurred. Please try again.');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    async function loadPatientRequests() {
+      const tbody = document.getElementById('consultationsBody');
+      if (!tbody) return;
+      
+      try {
+        const res = await fetch(`/patient-requests/${patientId}`);
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+          tbody.innerHTML = '';
+          if (data.requests.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-sub);">No consultation requests found.</td></tr>';
+            return;
+          }
+          
+          data.requests.forEach(r => {
+            const statusClass = 'status-' + r.status.toLowerCase();
+            tbody.innerHTML += `
+              <tr>
+                <td><strong>Dr. ${r.doctor_name}</strong></td>
+                <td>${r.specialization}</td>
+                <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${r.message}">${r.message}</td>
+                <td><span class="status-badge ${statusClass}">${r.status}</span></td>
+                <td class="td-date"><i class="fas fa-calendar-days"></i> ${r.date}</td>
+              </tr>
+            `;
+          });
+        }
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#EF4444;">Error loading requests.</td></tr>';
+      }
+    }
+
+    // Load requests on page load
+    document.addEventListener('DOMContentLoaded', loadPatientRequests);
+    {% endif %}
   </script>
 
 </body>

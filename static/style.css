@@ -730,6 +730,8 @@ header, main, footer, .ethics-banner { position: relative; z-index: 1; }
   .sidebar { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   .ethics-card { grid-column: 1 / -1; }
   .main-wrap { padding: 22px 24px; }
+  .chart-card { padding: 1rem; }
+  .modal-content { width: 95%; margin: 10px; }
   .navbar { padding: 0 24px; }
   .footer-disclaimer { padding: 11px 24px; }
   .footer-inner { padding: 12px 24px; }
@@ -969,3 +971,182 @@ header, main, footer, .ethics-banner { position: relative; z-index: 1; }
   .dash-title-row { flex-direction: column; }
   .chart-body   { height: 220px; }
 }
+/* ══════════ CONSULTATION MODAL & CARDS ══════════ */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-content {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  width: 90%;
+  max-width: 620px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.08);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface-2);
+  flex-shrink: 0;
+}
+.modal-header h2 {
+  margin: 0;
+}
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--txt-mid);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.2s, background 0.2s;
+}
+.modal-close:hover {
+  color: #EF4444;
+}
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  color: var(--txt-hi);
+  background: var(--surface);
+}
+
+/* Doctor Grid */
+.doctor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.doctor-card {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 1.1rem;
+  background: var(--surface-2);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+[data-theme="dark"] .doctor-card { background: var(--surface-3); }
+.doctor-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sh-sm);
+  border-color: var(--teal);
+}
+.doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+.doc-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  color: var(--txt-hi);
+}
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.doc-spec, .doc-exp {
+  margin: 0 0 0.4rem 0;
+  font-size: 0.83rem;
+  color: var(--txt-mid);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.doc-spec i, .doc-exp i {
+  color: var(--teal);
+  width: 13px;
+}
+.doc-req-btn {
+  margin-top: auto;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  width: 100%;
+}
+.doc-req-btn:disabled {
+  background: var(--border) !important;
+  color: var(--txt-lo) !important;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Form View */
+.selected-doctor-card {
+  background: rgba(8, 145, 178, 0.05);
+  border: 1px solid rgba(8, 145, 178, 0.2);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+.selected-doctor-card h3 {
+  margin: 0 0 0.25rem 0;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  color: var(--teal);
+}
+.selected-doctor-card p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--txt-mid);
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.status-pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: #D97706;
+}
+[data-theme="dark"] .status-pending { color: #FCD34D; }
+
+.status-accepted {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+[data-theme="dark"] .status-accepted { color: #6EE7B7; }
+
+.status-rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #DC2626;
+}
+[data-theme="dark"] .status-rejected { color: #FCA5A5; }
+
+.status-completed {
+  background: rgba(59, 130, 246, 0.15);
+  color: #2563EB;
+}
+[data-theme="dark"] .status-completed { color: #93C5FD; }
