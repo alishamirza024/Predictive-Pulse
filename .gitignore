@@ -1,23 +1,54 @@
-﻿# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+﻿# # Python
+# __pycache__/
+# *.pyc
+# *.pyo
+# *.pyd
 
-# Jupyter
-.ipynb_checkpoints/
+# # Jupyter
+# .ipynb_checkpoints/
 
-# Environment / secrets
+# # Environment / secrets
+# .env
+# .env.*
+# *.env
+
+# # Local databases (never commit to repo)
+# *.db
+# *.sqlite
+# *.sqlite3
+
+# # OS
+# .DS_Store
+# Thumbs.db
+# .vscode/
+
+
+# Environment
 .env
-.env.*
 *.env
 
-# Local databases (never commit to repo)
-*.db
-*.sqlite
-*.sqlite3
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
-.vscode/
+
+# Logs
+*.log

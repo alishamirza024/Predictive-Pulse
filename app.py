@@ -11,23 +11,27 @@ from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.lib import colors as rl_colors
 from reportlab.lib.utils import simpleSplit
 
+# ─────────────────────────────────────────────
+#  App & DB setup
+# ─────────────────────────────────────────────
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key')
 
-# ── Database URI ──────────────────────────────────────────────────────────────
-# Render injects DATABASE_URL automatically for its PostgreSQL add-on.
-# You can also set DATABASE_URL locally in your environment.
-import os
+# ── Database URL ──────────────────────────────────────────────────────────────
+# Render provides DATABASE_URL for PostgreSQL; fall back to MySQL for local dev.
+_db_url = os.getenv('DATABASE_URL')
+if _db_url:
+    # Render sometimes still returns the legacy "postgres://" prefix — fix it.
+    if _db_url.startswith('postgres://'):
+        _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = (
+        f"mysql+pymysql://{os.getenv('MYSQLUSER', 'root')}:{os.getenv('MYSQLPASSWORD', 'Root%40123')}"
+        f"@{os.getenv('MYSQLHOST', 'localhost')}:{os.getenv('MYSQLPORT', '3306')}/{os.getenv('MYSQL_DATABASE', 'hypertension_db')}"
+    )
 
-_db_url = os.getenv('DATABASE_URL', 'sqlite:///hypertension.db')
-
-# Fix for Render PostgreSQL URL format
-if _db_url.startswith('postgres://'):
-    _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 
 db = SQLAlchemy(app)
 
@@ -1100,9 +1104,7 @@ with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
-    debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
-    app.run(debug=debug, host='0.0.0.0', port=port)
+    app.run(debug=True, host='0.0.0.0', port=5000)
 
 
 
