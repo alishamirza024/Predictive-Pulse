@@ -103,6 +103,7 @@
         <p style="margin:0; font-weight:600; font-size:1.1rem; color:var(--text-main, #0F172A);">{{ patient.username }}</p>
       </div>
       <div style="flex:1; min-width:150px;">
+        
         <p style="margin:0 0 0.25rem; font-size:0.85rem; color:var(--text-sub, #64748B);">Latest Risk Level</p>
         <p style="margin:0; font-weight:600; font-size:1.1rem; color:var(--text-main, #0F172A);">
           <span class="risk-tag {% if last %}{% if last.priority == 'EMERGENCY' %}rtag-emergency{% elif last.priority == 'High Risk' %}rtag-high{% elif last.priority == 'Moderate Risk' %}rtag-moderate{% else %}rtag-low{% endif %}{% else %}rtag-low{% endif %}" style="margin:0; display:inline-block; padding:4px 8px;">
