@@ -1,11 +1,12 @@
-
 services:
   - type: web
     name: hypertension-prediction
     runtime: python
-    plan: free   
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --workers=2 --timeout=120
+    plan: free
+    buildCommand: |
+      python -m pip install --upgrade pip setuptools wheel
+      pip install --only-binary=:all: -r requirements.txt
+    startCommand: gunicorn app:app --workers=2 --timeout=120 --bind 0.0.0.0:$PORT
     envVars:
       - key: SECRET_KEY
         generateValue: true
@@ -16,9 +17,8 @@ services:
       - key: FLASK_DEBUG
         value: "false"
     autoDeploy: true
-    
+
 databases:
   - name: hypertension-db
     databaseName: hypertension_db
     plan: free
-
