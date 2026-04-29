@@ -17,17 +17,17 @@ app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key')
 # ── Database URI ──────────────────────────────────────────────────────────────
 # Render injects DATABASE_URL automatically for its PostgreSQL add-on.
 # You can also set DATABASE_URL locally in your environment.
-_db_url = os.getenv('DATABASE_URL', '')
-if _db_url.startswith('postgres://'):
-    # SQLAlchemy 1.4+ requires postgresql:// scheme
-    _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+import os
 
-if not _db_url:
-    # SQLite fallback for local development if PostgreSQL is not set up
-    _db_url = 'sqlite:///hypertension.db'
+_db_url = os.getenv('DATABASE_URL', 'sqlite:///hypertension.db')
+
+# Fix for Render PostgreSQL URL format
+if _db_url.startswith('postgres://'):
+    _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 
 db = SQLAlchemy(app)
 
