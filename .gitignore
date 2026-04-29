@@ -1,9 +1,21 @@
-# Python
+﻿# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Environment / secrets
+.env
+.env.*
+*.env
+
+# Local databases (never commit to repo)
+*.db
+*.sqlite
+*.sqlite3
 
 # OS
 .DS_Store

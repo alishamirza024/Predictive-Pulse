@@ -17,11 +17,30 @@ from reportlab.lib.utils import simpleSplit
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = (
-    f"mysql+pymysql://{os.getenv('MYSQLUSER', 'root')}:{os.getenv('MYSQLPASSWORD', 'Root%40123')}"
-    f"@{os.getenv('MYSQLHOST', 'localhost')}:{os.getenv('MYSQLPORT', '3306')}/{os.getenv('MYSQL_DATABASE', 'hypertension_db')}"
-)
+# ── Database URI ──────────────────────────────────────────────────────────────
+# Render injects DATABASE_URL automatically for its PostgreSQL add-on.
+# If not present, fall back to local MySQL; if that's also absent use SQLite.
+_db_url = os.getenv('DATABASE_URL', '')
+if _db_url.startswith('postgres://'):
+    # SQLAlchemy 1.4+ requires postgresql:// scheme
+    _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
 
+if not _db_url:
+    _mysql_user = os.getenv('MYSQLUSER', '')
+    _mysql_pass = os.getenv('MYSQLPASSWORD', '')
+    _mysql_host = os.getenv('MYSQLHOST', 'localhost')
+    _mysql_port = os.getenv('MYSQLPORT', '3306')
+    _mysql_db   = os.getenv('MYSQL_DATABASE', 'hypertension_db')
+    if _mysql_user:
+        _db_url = (
+            f"mysql+pymysql://{_mysql_user}:{_mysql_pass}"
+            f"@{_mysql_host}:{_mysql_port}/{_mysql_db}"
+        )
+    else:
+        # SQLite fallback for local / Render free-tier without a DB add-on
+        _db_url = 'sqlite:///hypertension.db'
+
+app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -1095,7 +1114,9 @@ with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    port = int(os.getenv('PORT', 5000))
+    debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
+    app.run(debug=debug, host='0.0.0.0', port=port)
 
 
 
