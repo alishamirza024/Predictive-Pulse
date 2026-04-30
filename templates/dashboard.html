@@ -413,6 +413,10 @@
           <form id="consultationForm" onsubmit="submitConsultation(event)">
             <input type="hidden" id="formDoctorId">
             <div style="margin-bottom: 15px;">
+              <label style="display:block; margin-bottom:5px; font-weight:500;">Contact Number <span style="color:#EF4444;">*</span></label>
+              <input type="tel" id="formContact" required placeholder="+1 234 567 890" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-family:inherit;">
+            </div>
+            <div style="margin-bottom: 15px;">
               <label style="display:block; margin-bottom:5px; font-weight:500;">Reason for Consultation <span style="color:#EF4444;">*</span></label>
               <textarea id="formReason" required rows="3" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); font-family:inherit; resize:vertical;"></textarea>
             </div>
@@ -604,6 +608,7 @@
       document.getElementById('formDoctorId').value = id;
       document.getElementById('formDoctorName').innerText = 'Dr. ' + name;
       document.getElementById('formDoctorSpec').innerText = spec;
+      document.getElementById('formContact').value = '';
       document.getElementById('formReason').value = '';
       document.getElementById('formNotes').value = '';
       
@@ -621,7 +626,8 @@
       const payload = {
         doctor_id: document.getElementById('formDoctorId').value,
         message: document.getElementById('formReason').value,
-        notes: document.getElementById('formNotes').value
+        notes: document.getElementById('formNotes').value,
+        contact_number: document.getElementById('formContact').value
       };
 
       try {

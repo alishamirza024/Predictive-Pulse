@@ -10,6 +10,9 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.lib import colors as rl_colors
 from reportlab.lib.utils import simpleSplit
+from dotenv import load_dotenv
+load_dotenv()
+
 
 # ─────────────────────────────────────────────
 #  App & DB setup
@@ -113,6 +116,7 @@ class ConsultationRequest(db.Model):
     doctor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     request_message = db.Column(db.Text, nullable=False)
     additional_notes = db.Column(db.Text)
+    contact_number = db.Column(db.String(20), nullable=True)
     status = db.Column(db.String(20), default='Pending') # Pending, Accepted, Rejected, Completed
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -577,6 +581,7 @@ def predict():
             'Severity', 'BreathShortness', 'VisualChanges', 'NoseBleeding',
             'Whendiagnoused', 'Systolic', 'Diastolic', 'ControlledDiet'
         ]
+
         form_data = {}
         for field in required_fields:
             value = request.form.get(field)
@@ -615,9 +620,9 @@ def predict():
         input_array = np.array(scaled).reshape(1, -1)
 
         if model is not None:
-            prediction = model.predict(input_array)[0]
+            prediction = int(model.predict(input_array)[0])  # ensure int
             try:
-                confidence = max(model.predict_proba(input_array)[0]) * 100
+                confidence = float(max(model.predict_proba(input_array)[0]) * 100)  # ✅ FIX
             except Exception:
                 confidence = 85.0
         else:
@@ -628,30 +633,42 @@ def predict():
 
         rec = recommendations[prediction]
 
-        # Save to DB — include raw form inputs as JSON for PDF export
+        # ✅ Ensure clean types
+        confidence = float(round(confidence, 2))
+
         record = PredictionRecord(
             user_id    = current_user.id,
             result     = stage_map[prediction],
-            confidence = round(confidence, 2),
+            confidence = confidence,
             priority   = rec['priority'],
             input_data = json.dumps(form_data)
         )
+
         db.session.add(record)
-        db.session.commit()
+
+        # ✅ FIX: safe commit
+        try:
+            db.session.commit()
+        except Exception as db_error:
+            db.session.rollback()
+            print("Database error:", db_error)
+            flash('Database error occurred. Please try again.', 'error')
+            return render_template('index.html')
 
         return render_template(
             'index.html',
-            prediction_text     = stage_map[prediction],
-            result_color        = color_map[prediction],
-            confidence          = confidence,
-            recommendation      = rec,
-            form_data           = form_data
+            prediction_text = stage_map[prediction],
+            result_color    = color_map[prediction],
+            confidence      = confidence,
+            recommendation  = rec,
+            form_data       = form_data
         )
 
     except Exception as e:
+        db.session.rollback()  # ✅ important
+        print("System error:", e)
         flash('System error occurred. Please try again.', 'error')
         return render_template('index.html')
-
 
 # ─────────────────────────────────────────────
 #  Consultation API Routes
@@ -683,9 +700,10 @@ def request_consultation():
     doctor_id = data.get('doctor_id')
     message = data.get('message', '').strip()
     notes = data.get('notes', '').strip()
+    contact_number = data.get('contact_number', '').strip()
     
-    if not doctor_id or not message:
-        return {'status': 'error', 'message': 'Doctor ID and message are required'}, 400
+    if not doctor_id or not message or not contact_number:
+        return {'status': 'error', 'message': 'Doctor ID, message, and contact number are required'}, 400
         
     # Check if a pending request already exists
     existing = ConsultationRequest.query.filter_by(
@@ -701,7 +719,8 @@ def request_consultation():
         patient_id=current_user.id,
         doctor_id=doctor_id,
         request_message=message,
-        additional_notes=notes
+        additional_notes=notes,
+        contact_number=contact_number
     )
     db.session.add(new_req)
     db.session.commit()
@@ -737,11 +756,16 @@ def get_doctor_requests(doctor_id):
     requests = ConsultationRequest.query.filter_by(doctor_id=doctor_id).order_by(ConsultationRequest.created_at.desc()).all()
     results = []
     for req in requests:
+        latest_record = PredictionRecord.query.filter_by(user_id=req.patient_id).order_by(PredictionRecord.created_at.desc()).first()
+        latest_risk = latest_record.priority if latest_record else "No Data"
+        
         results.append({
             'id': req.id,
             'patient_name': req.patient.username,
             'message': req.request_message,
             'notes': req.additional_notes,
+            'contact_number': req.contact_number if req.status == 'Accepted' else None,
+            'latest_risk': latest_risk,
             'status': req.status,
             'date': req.created_at.strftime('%Y-%m-%d %H:%M')
         })
@@ -765,6 +789,11 @@ def update_request_status():
         return {'status': 'error', 'message': 'Request not found or unauthorized'}, 404
         
     req.status = new_status
+    
+    if new_status == 'Accepted':
+        if req.patient not in req.doctor.patients:
+            req.doctor.patients.append(req.patient)
+            
     db.session.commit()
     
     return {'status': 'success', 'message': f'Request marked as {new_status}'}
@@ -1118,6 +1147,15 @@ def init_db():
     try:
         db.create_all()
         print("✅ Database tables created / verified.")
+        
+        # Safely attempt to add the new contact_number column for existing deployments
+        try:
+            db.session.execute(db.text('ALTER TABLE consultation_requests ADD COLUMN contact_number VARCHAR(20)'))
+            db.session.commit()
+            print("✅ Successfully added contact_number to consultation_requests.")
+        except Exception:
+            db.session.rollback() # Column likely already exists
+            
     except Exception as e:
         print(f"⚠️  db.create_all() failed: {e}")
 

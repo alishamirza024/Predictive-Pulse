@@ -83,8 +83,8 @@
           <thead>
             <tr>
               <th>Patient Name</th>
+              <th>Risk Level</th>
               <th>Message</th>
-              <th>Notes</th>
               <th>Date</th>
               <th>Status / Action</th>
             </tr>
@@ -187,6 +187,14 @@
             const statusClass = 'status-' + r.status.toLowerCase();
             let actionHtml = '';
             
+            // Format Risk Label
+            let riskBadgeClass = 'badge-normal';
+            if (r.latest_risk === 'EMERGENCY') riskBadgeClass = 'badge-crisis';
+            else if (r.latest_risk === 'High Risk') riskBadgeClass = 'badge-s2';
+            else if (r.latest_risk === 'Moderate Risk') riskBadgeClass = 'badge-s1';
+            
+            let riskHtml = `<span class="stage-badge ${riskBadgeClass}">${r.latest_risk}</span>`;
+            
             if (r.status === 'Pending') {
               actionHtml = `
                 <div style="display:flex; gap:0.5rem; justify-content:center;">
@@ -195,9 +203,11 @@
                 </div>
               `;
             } else if (r.status === 'Accepted') {
+              let callBtn = r.contact_number ? `<a href="tel:${r.contact_number}" class="submit-btn" style="width:auto; margin:0; padding:6px 12px; font-size:0.8rem; background:#0891B2; border:none; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:4px;"><i class="fas fa-phone"></i> Call</a>` : '';
               actionHtml = `
-                <div style="display:flex; gap:0.5rem; justify-content:center; align-items:center;">
-                  <span class="status-badge ${statusClass}" style="margin-right: 10px;">${r.status}</span>
+                <div style="display:flex; gap:0.5rem; justify-content:center; align-items:center; flex-wrap:wrap;">
+                  <span class="status-badge ${statusClass}">${r.status}</span>
+                  ${callBtn}
                   <button onclick="updateRequestStatus(${r.id}, 'Completed')" class="submit-btn" style="width:auto; margin:0; padding:6px 12px; font-size:0.8rem; background:#3B82F6; border:none; color:#fff;">Mark Completed</button>
                 </div>
               `;
@@ -208,8 +218,11 @@
             tbody.innerHTML += `
               <tr>
                 <td><strong>${r.patient_name}</strong></td>
-                <td style="max-width: 250px;">${r.message}</td>
-                <td style="max-width: 200px; color:var(--text-sub); font-size:0.85rem;">${r.notes || '-'}</td>
+                <td>${riskHtml}</td>
+                <td style="max-width: 250px;">
+                  <div>${r.message}</div>
+                  ${r.notes ? `<div style="color:var(--text-sub); font-size:0.85rem; margin-top:4px;"><strong>Notes:</strong> ${r.notes}</div>` : ''}
+                </td>
                 <td class="td-date"><i class="fas fa-calendar-days"></i> ${r.date}</td>
                 <td style="text-align:center;">${actionHtml}</td>
               </tr>
